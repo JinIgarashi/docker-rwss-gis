@@ -1,0 +1,118 @@
+version: '3.2'
+services:
+  lizmap:
+    image: jancelin/docker-lizmap:3.2rc6
+    restart: on-failure
+#    expose:
+#      - 80
+#      - 443
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+     - project:/home
+     - var:/var/www/websig/lizmap/var
+#    environment:
+#     - VIRTUAL_HOST=gis-server2.wasac.rw,172.16.15.6
+#     - VIRTUAL_PROTO=https
+#     - VIRTUAL_PORT=443
+#     - LETSENCRYPT_HOST=gis-server2.wasac.rw,172.16.15.6
+#     - LETSENCRYPT_EMAIL=jin_igarashi@kk-grp.jp
+    depends_on:
+#      - postgis
+      - qgiserver
+      - redis
+    links:
+     - qgiserver:qgiserver
+     - redis:redis
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+    networks:
+      - shared     
+
+  qgiserver:
+    image: jancelin/qgis-server:2.18LTR
+    restart: on-failure
+    volumes:
+      - project:/home
+    expose:
+      - 80
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+    networks:
+      - shared
+      
+  redis:
+    image: redis:alpine
+    restart: on-failure
+    volumes:
+      - redis:/data
+    expose:
+      - 6379
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+    networks:
+      - shared
+
+#We use DB of docker host, so just commented out.
+#  postgis:
+#    image: kartoza/postgis:10.0-2.4
+#    ports:
+#      - 25432:5432
+#    expose:
+#      - 5432
+#    environment:
+#      - ALLOW_IP_RANGE=0.0.0.0/0
+#      - POSTGRES_USER=docker
+#      - POSTGRES_PASS=docker
+#      - POSTGRES_DBNAME=rwss_assets
+#    volumes:
+#      - postgres:/var/lib/postgresql
+#
+#  pgadmin4:
+#    image: chorss/docker-pgadmin4
+#    restart: on-failure
+#    ports:
+#      - 5050:5050
+#    volumes:
+#      - pgadmin4:/data
+#    links:
+#     - postgis:postgis
+
+  portainer:
+    image: portainer/portainer
+    restart: always
+    ports:
+     - 9000:9000
+    volumes:
+     - /var/run/docker.sock:/var/run/docker.sock
+     - portainer:/data
+    networks:
+      - shared
+
+  cloud:
+    image: coderaiser/cloudcmd:latest-alpine
+    restart: always
+    ports:
+      - 8000:8000
+    environment:
+     - CLOUDCMD_AUTH=true
+     - CLOUDCMD_USERNAME=docker
+     - CLOUDCMD_PASSWORD=docker
+    volumes:
+#      - ~:/root
+      - project:/mnt/project
+    networks:
+      - shared
+
+volumes:
+  portainer:
+#  postgres:
+#  pgadmin4:
+  redis:
+  var:
+  project:
+
+networks:
+  shared:
+    external: true

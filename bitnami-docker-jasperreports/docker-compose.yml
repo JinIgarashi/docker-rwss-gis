@@ -1,0 +1,52 @@
+version: '2'
+services:
+  mariadb:
+    image: 'bitnami/mariadb:latest'
+    environment:
+      - MARIADB_USER=bn_jasperreports
+      - MARIADB_DATABASE=bitnami_jasperreports
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - 'mariadb_data:/bitnami'
+    networks:
+      - shared
+
+  jasperreports:
+    image: 'bitnami/jasperreports:latest'
+    environment:
+      - MARIADB_HOST=mariadb
+      - MARIADB_PORT_NUMBER=3306
+      - JASPERREPORTS_DATABASE_USER=bn_jasperreports
+      - JASPERREPORTS_DATABASE_NAME=bitnami_jasperreports
+      - ALLOW_EMPTY_PASSWORD=yes
+#      - VIRTUAL_HOST=report.gis-server2.wasac.rw
+#      - VIRTUAL_PROTO=https
+#      - VIRTUAL_PORT=8443
+#      - LETSENCRYPT_HOST=report.gis-server2.wasac.rw
+#      - LETSENCRYPT_EMAIL=jin_igarashi@kk-grp.jp
+    labels:
+      kompose.service.type: nodeport
+#    expose:
+#      - 8080
+#      - 8443
+    ports:
+      - '8080:8080'
+      - '8443:8443'
+    volumes:
+      - 'jasperreports_data:/bitnami'
+    depends_on:
+      - mariadb
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+    networks:
+      - shared
+
+volumes:
+  mariadb_data:
+    driver: local
+  jasperreports_data:
+    driver: local
+
+networks:
+  shared:
+    external: true
